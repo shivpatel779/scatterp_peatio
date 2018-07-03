@@ -6,6 +6,10 @@ app.directive 'accounts', ->
     controller: ($scope, $state) ->
       ctrl = @
       @state = $state
+      @defaultCurrency = if gon.current_user.document_auth
+                          Account.first().currency
+                        else
+                          Account.first(2)[1].currency
       if window.location.hash == ""
         @state.transitionTo("deposits.currency", {currency: Account.first().currency})
 
@@ -13,7 +17,7 @@ app.directive 'accounts', ->
 
       # Might have a better way
       # #/deposits/eur
-      @selectedCurrency = window.location.hash.split('/')[2] || Account.first().currency
+      @selectedCurrency = window.location.hash.split('/')[2] || @defaultCurrency
       @currentAction = window.location.hash.split('/')[1] || 'deposits'
       $scope.currency = @selectedCurrency
 
@@ -27,11 +31,15 @@ app.directive 'accounts', ->
         @currentAction == 'withdraws'
 
       @deposit = (account) ->
+        if(!gon.current_user.document_auth && gon.fiat_currency == account.currency)
+          window.location.href = "id_document/edit"
         ctrl.state.transitionTo("deposits.currency", {currency: account.currency})
         ctrl.selectedCurrency = account.currency
         ctrl.currentAction = "deposits"
 
       @withdraw = (account) ->
+        if(!gon.current_user.document_auth)
+          window.location.href = "id_document/edit"
         ctrl.state.transitionTo("withdraws.currency", {currency: account.currency})
         ctrl.selectedCurrency = account.currency
         ctrl.currentAction = "withdraws"
